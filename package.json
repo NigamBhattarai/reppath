@@ -1,0 +1,13 @@
+{
+  "name": "reppath",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend",
+    "packages/shared"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
