@@ -24,8 +24,10 @@ export const typeDefs = `#graphql
     role: Role!
     gymId: ID!
     isActive: Boolean!
-    assignedCoachId: ID
     createdAt: Date!
+    assignedCoach: User
+    activeProgram: Program
+    assignedMemberCount: Int
   }
 
   # --- Gym ---
@@ -49,6 +51,7 @@ export const typeDefs = `#graphql
     dayNumber: Int!
     name: String!
     exercises: [Exercise!]!
+    isLogged: Boolean
   }
 
   type Week {
@@ -63,6 +66,7 @@ export const typeDefs = `#graphql
     coachId: ID!
     gymId: ID!
     weeks: [Week!]!
+    hasActiveAssignment: Boolean!
     createdAt: Date!
   }
 
@@ -219,8 +223,10 @@ export const typeDefs = `#graphql
     # Coach
     myMembers: [User!]!
     coachDashboard: CoachDashboard!
-    memberWorkoutLogs(memberId: ID!): [WorkoutLog!]!
+    memberWorkoutLogs(memberId: ID!, limit: Int, offset: Int): [WorkoutLog!]!
     memberProgress(memberId: ID!, exerciseName: String!): ExerciseProgress!
+    memberLoggedExercises(memberId: ID!): [String!]!
+
 
     # Coach & Member
     programs: [Program!]!
@@ -230,6 +236,7 @@ export const typeDefs = `#graphql
     myAssignment: ProgramAssignment
     myWorkoutLogs: [WorkoutLog!]!
     myProgress(exerciseName: String!): ExerciseProgress!
+    myLoggedExercises: [String!]!
   }
 
   # --- Mutations ---
@@ -250,7 +257,7 @@ export const typeDefs = `#graphql
     deleteProgram(id: ID!): Boolean!
     assignProgram(memberId: ID!, programId: ID!): ProgramAssignment!
     unassignProgram(memberId: ID!): Boolean!
-    
+
     # Member
     logWorkout(input: LogWorkoutInput!): WorkoutLog!
   }
