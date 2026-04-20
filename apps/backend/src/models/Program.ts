@@ -25,10 +25,10 @@ export interface IProgram extends Document {
   coachId: mongoose.Types.ObjectId;
   gymId: mongoose.Types.ObjectId;
   weeks: IWeek[];
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
-
 const ExerciseSchema = new Schema<IExercise>(
   {
     name: { type: String, required: true },
@@ -63,11 +63,11 @@ const ProgramSchema = new Schema<IProgram>(
     description: { type: String, required: true },
     coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     gymId: { type: Schema.Types.ObjectId, ref: 'Gym', required: true },
-    weeks: { type: [WeekSchema], default: [] }
+    weeks: { type: [WeekSchema], default: [] },
+    isDeleted: { type: Boolean, default: false }
   },
   { timestamps: true }
 );
-
 ProgramSchema.index({ coachId: 1, gymId: 1 });
 
 export default mongoose.model<IProgram>('Program', ProgramSchema);
