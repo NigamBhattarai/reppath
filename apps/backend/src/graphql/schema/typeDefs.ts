@@ -214,7 +214,8 @@ export const typeDefs = `#graphql
     gymMembers: [User!]!
     gymCoaches: [User!]!
     ownerDashboard: OwnerDashboard!
-
+    coachMembers(coachId: ID!): [User!]!
+    
     # Coach
     myMembers: [User!]!
     coachDashboard: CoachDashboard!
@@ -248,7 +249,8 @@ export const typeDefs = `#graphql
     updateProgram(id: ID!, input: UpdateProgramInput!): Program!
     deleteProgram(id: ID!): Boolean!
     assignProgram(memberId: ID!, programId: ID!): ProgramAssignment!
-
+    unassignProgram(memberId: ID!): Boolean!
+    
     # Member
     logWorkout(input: LogWorkoutInput!): WorkoutLog!
   }
