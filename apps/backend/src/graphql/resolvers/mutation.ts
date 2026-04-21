@@ -1,8 +1,10 @@
 import { AuthContext } from '../../middleware/auth';
+import { requireRole } from '../../middleware/rbac';
 import { hashPassword, comparePassword } from '../../utils/password';
 import { signToken } from '../../utils/jwt';
 import User from '../../models/User';
 import Gym from '../../models/Gym';
+import ProgramAssignment from '../../models/ProgramAssignment';
 import mongoose from 'mongoose';
 
 export const Mutation = {
@@ -90,5 +92,109 @@ export const Mutation = {
     });
 
     return { token, user };
-  }
+  },
+
+  // --- Owner Mutations ---
+
+  createCoach: async (
+    _: unknown,
+    { input }: { input: { name: string; email: string; password: string } },
+    context: AuthContext
+  ) => {
+    const { gymId } = requireRole(context, 'owner');
+
+    const existing = await User.findOne({ email: input.email.toLowerCase() });
+    if (existing) {
+      throw new Error('An account with this email already exists');
+    }
+
+    const passwordHash = await hashPassword(input.password);
+
+    return User.create({
+      name: input.name,
+      email: input.email.toLowerCase(),
+      passwordHash,
+      role: 'coach',
+      gymId: new mongoose.Types.ObjectId(gymId),
+      isActive: true
+    });
+  },
+
+  createMember: async (
+    _: unknown,
+    { input }: { input: { name: string; email: string; password: string } },
+    context: AuthContext
+  ) => {
+    const { gymId } = requireRole(context, 'owner');
+
+    const existing = await User.findOne({ email: input.email.toLowerCase() });
+    if (existing) {
+      throw new Error('An account with this email already exists');
+    }
+
+    const passwordHash = await hashPassword(input.password);
+
+    return User.create({
+      name: input.name,
+      email: input.email.toLowerCase(),
+      passwordHash,
+      role: 'member',
+      gymId: new mongoose.Types.ObjectId(gymId),
+      isActive: true
+    });
+  },
+
+  assignMemberToCoach: async (
+    _: unknown,
+    { memberId, coachId }: { memberId: string; coachId: string },
+    context: AuthContext
+  ) => {
+    const { gymId } = requireRole(context, 'owner');
+
+    const member = await User.findOne({
+      _id: memberId,
+      gymId,
+      role: 'member'
+    });
+    if (!member) {
+      throw new Error('Member not found in your gym');
+    }
+
+    const coach = await User.findOne({
+      _id: coachId,
+      gymId,
+      role: 'coach',
+      isActive: true
+    });
+    if (!coach) {
+      throw new Error('Coach not found or is inactive');
+    }
+
+    member.assignedCoachId = new mongoose.Types.ObjectId(coachId);
+    await member.save();
+
+    return member;
+  },
+
+  deactivateUser: async (
+    _: unknown,
+    { userId }: { userId: string },
+    context: AuthContext
+  ) => {
+    const { gymId, userId: ownerId } = requireRole(context, 'owner');
+
+    if (userId === ownerId) {
+      throw new Error('You cannot deactivate your own account');
+    }
+
+    const user = await User.findOne({ _id: userId, gymId });
+    if (!user) {
+      throw new Error('User not found in your gym');
+    }
+
+    user.isActive = false;
+    await user.save();
+
+    return user;
+  },
 };
