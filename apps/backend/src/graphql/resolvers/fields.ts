@@ -51,7 +51,7 @@ export const ProgramFieldResolvers = {
 export const WeekFieldResolvers = {
   days: (parent: IWeek) => {
     return parent.days.map(day => ({
-      ...(day.toObject ? day.toObject() : { ...day }),
+      ...((day as any).toObject ? (day as any).toObject() : { ...day }),
       _weekNumber: parent.weekNumber
     }));
   }
