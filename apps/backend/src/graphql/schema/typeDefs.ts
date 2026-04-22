@@ -226,10 +226,10 @@ export const typeDefs = `#graphql
     memberWorkoutLogs(memberId: ID!, limit: Int, offset: Int): [WorkoutLog!]!
     memberProgress(memberId: ID!, exerciseName: String!): ExerciseProgress!
     memberLoggedExercises(memberId: ID!): [String!]!
+    myPrograms: [Program!]!
 
 
     # Coach & Member
-    programs: [Program!]!
     program(id: ID!): Program!
 
     # Member
