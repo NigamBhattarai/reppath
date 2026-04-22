@@ -6,6 +6,8 @@ import User from '../../models/User';
 import Gym from '../../models/Gym';
 import ProgramAssignment from '../../models/ProgramAssignment';
 import mongoose from 'mongoose';
+import Program from '../../models/Program';
+import WorkoutLog from '../../models/WorkoutLog';
 
 export const Mutation = {
   registerOwner: async (
@@ -197,4 +199,153 @@ export const Mutation = {
 
     return user;
   },
+  createProgram: async (
+    _: unknown,
+    { input }: {
+      input: {
+        name: string;
+        description: string;
+        weeks: Array<{
+          weekNumber: number;
+          days: Array<{
+            dayNumber: number;
+            name: string;
+            exercises: Array<{
+              name: string;
+              sets: number;
+              reps: string;
+              targetWeight?: number;
+              notes?: string;
+            }>;
+          }>;
+        }>;
+      }
+    },
+    context: AuthContext
+  ) => {
+    const { userId, gymId } = requireRole(context, 'coach');
+
+    return Program.create({
+      name: input.name,
+      description: input.description,
+      coachId: new mongoose.Types.ObjectId(userId),
+      gymId: new mongoose.Types.ObjectId(gymId),
+      weeks: input.weeks
+    });
+  },
+
+  updateProgram: async (
+    _: unknown,
+    { id, input }: { id: string; input: { name?: string; description?: string; weeks?: unknown } },
+    context: AuthContext
+  ) => {
+    const { userId } = requireRole(context, 'coach');
+
+    const program = await Program.findOne({ _id: id, coachId: userId });
+    if (!program) {
+      throw new Error('Program not found or you do not have permission to edit it');
+    }
+
+    if (input.name !== undefined) program.name = input.name;
+    if (input.description !== undefined) program.description = input.description;
+    if (input.weeks !== undefined) program.weeks = input.weeks as typeof program.weeks;
+
+    return program.save();
+  },
+
+  deleteProgram: async (
+    _: unknown,
+    { id }: { id: string },
+    context: AuthContext
+  ) => {
+    const { userId } = requireRole(context, 'coach');
+
+    const program = await Program.findOne({ _id: id, coachId: userId });
+    if (!program) {
+      throw new Error('Program not found or you do not have permission to delete it');
+    }
+
+    const activeAssignment = await ProgramAssignment.findOne({
+      programId: id,
+      isActive: true
+    });
+    if (activeAssignment) {
+      throw new Error('Cannot delete a program with active assignments');
+    }
+
+    program.isDeleted = true;
+    await program.save();
+
+    return true;
+  },
+
+  assignProgram: async (
+    _: unknown,
+    { memberId, programId }: { memberId: string; programId: string },
+    context: AuthContext
+  ) => {
+    const { userId, gymId } = requireRole(context, 'coach');
+
+    const member = await User.findOne({
+      _id: memberId,
+      assignedCoachId: userId,
+      role: 'member',
+      isActive: true
+    });
+    if (!member) {
+      throw new Error('Member not found or not assigned to you');
+    }
+
+    const program = await Program.findOne({
+      _id: programId,
+      coachId: userId,
+      isDeleted: false
+    });
+    if (!program) {
+      throw new Error('Program not found or has been deleted');
+    }
+
+    await ProgramAssignment.updateMany(
+      { memberId, isActive: true },
+      { isActive: false }
+    );
+
+    return ProgramAssignment.create({
+      programId: new mongoose.Types.ObjectId(programId),
+      memberId: new mongoose.Types.ObjectId(memberId),
+      coachId: new mongoose.Types.ObjectId(userId),
+      gymId: new mongoose.Types.ObjectId(gymId),
+      startDate: new Date(),
+      isActive: true
+    });
+  },
+
+  unassignProgram: async (
+    _: unknown,
+    { memberId }: { memberId: string },
+    context: AuthContext
+  ) => {
+    const { userId } = requireRole(context, 'coach');
+
+    const member = await User.findOne({
+      _id: memberId,
+      assignedCoachId: userId,
+      role: 'member'
+    });
+    if (!member) {
+      throw new Error('Member not found or not assigned to you');
+    }
+
+    const result = await ProgramAssignment.updateMany(
+      { memberId, isActive: true },
+      { isActive: false }
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new Error('This member has no active program assignment');
+    }
+
+    return true;
+  },
+
 };

@@ -4,6 +4,7 @@ import { JwtPayload } from '@reppath/shared';
 
 export interface AuthContext {
   user: JwtPayload | null;
+  memberId?: string;
 }
 
 export const buildContext = (req: Request): AuthContext => {
@@ -22,3 +23,4 @@ export const buildContext = (req: Request): AuthContext => {
     return { user: null };
   }
 };
+

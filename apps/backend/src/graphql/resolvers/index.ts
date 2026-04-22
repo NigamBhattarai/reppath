@@ -22,8 +22,19 @@ const DateScalar = {
   }
 };
 
+import {
+  UserFieldResolvers,
+  ProgramFieldResolvers,
+  WeekFieldResolvers,
+  DayFieldResolvers
+} from './fields';
+
 export const resolvers = {
   Date: DateScalar,
   Query,
   Mutation,
+  User: UserFieldResolvers,
+  Program: ProgramFieldResolvers,
+  Week: WeekFieldResolvers,
+  Day: DayFieldResolvers
 };

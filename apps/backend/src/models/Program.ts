@@ -8,13 +8,13 @@ interface IExercise {
   notes: string | null;
 }
 
-interface IDay {
+export interface IDay {
   dayNumber: number;
   name: string;
   exercises: IExercise[];
 }
 
-interface IWeek {
+export interface IWeek {
   weekNumber: number;
   days: IDay[];
 }

@@ -1,7 +1,10 @@
 import ProgramAssignment from '../../models/ProgramAssignment';
+import WorkoutLog from '../../models/WorkoutLog';
 import User from '../../models/User';
 import { IUser } from '../../models/User';
-import { IProgram } from '../../models/Program';
+import { IProgram, IDay, IWeek } from '../../models/Program';
+import { AuthContext } from '../../middleware/auth';
+import mongoose from 'mongoose';
 
 export const UserFieldResolvers = {
   id: (parent: IUser) => parent._id.toString(),
@@ -40,5 +43,48 @@ export const ProgramFieldResolvers = {
       isActive: true
     });
     return count > 0;
+  }
+};
+
+// Week resolver enriches each day with its parent weekNumber
+// so the Day resolver has access to it
+export const WeekFieldResolvers = {
+  days: (parent: IWeek) => {
+    return parent.days.map(day => ({
+      ...(day.toObject ? day.toObject() : { ...day }),
+      _weekNumber: parent.weekNumber
+    }));
+  }
+};
+
+export const DayFieldResolvers = {
+  isLogged: async (
+    parent: IDay & { _weekNumber?: number },
+    _: unknown,
+    context: AuthContext
+  ) => {
+    // only meaningful for members viewing their own program
+    if (!context.user || context.user.role !== 'member') return null;
+
+    const memberId = context.user.userId;
+    const weekNumber = parent._weekNumber;
+
+    if (!weekNumber) return null;
+
+    const assignment = await ProgramAssignment.findOne({
+      memberId: new mongoose.Types.ObjectId(memberId),
+      isActive: true
+    });
+
+    if (!assignment) return null;
+
+    const log = await WorkoutLog.findOne({
+      memberId: new mongoose.Types.ObjectId(memberId),
+      assignmentId: assignment._id,
+      weekNumber,
+      dayNumber: parent.dayNumber
+    });
+
+    return log !== null;
   }
 };
