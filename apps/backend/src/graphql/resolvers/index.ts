@@ -26,7 +26,9 @@ import {
   UserFieldResolvers,
   ProgramFieldResolvers,
   WeekFieldResolvers,
-  DayFieldResolvers
+  DayFieldResolvers,
+  ProgramAssignmentFieldResolvers,
+  WorkoutLogFieldResolvers
 } from './fields';
 
 export const resolvers = {
@@ -36,5 +38,7 @@ export const resolvers = {
   User: UserFieldResolvers,
   Program: ProgramFieldResolvers,
   Week: WeekFieldResolvers,
-  Day: DayFieldResolvers
+  Day: DayFieldResolvers,
+  ProgramAssignment: ProgramAssignmentFieldResolvers,
+  WorkoutLog: WorkoutLogFieldResolvers,
 };

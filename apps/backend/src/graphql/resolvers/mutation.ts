@@ -103,7 +103,7 @@ export const Mutation = {
     { input }: { input: { name: string; email: string; password: string } },
     context: AuthContext
   ) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
 
     const existing = await User.findOne({ email: input.email.toLowerCase() });
     if (existing) {
@@ -127,7 +127,7 @@ export const Mutation = {
     { input }: { input: { name: string; email: string; password: string } },
     context: AuthContext
   ) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
 
     const existing = await User.findOne({ email: input.email.toLowerCase() });
     if (existing) {
@@ -151,7 +151,7 @@ export const Mutation = {
     { memberId, coachId }: { memberId: string; coachId: string },
     context: AuthContext
   ) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
 
     const member = await User.findOne({
       _id: memberId,
@@ -183,7 +183,7 @@ export const Mutation = {
     { userId }: { userId: string },
     context: AuthContext
   ) => {
-    const { gymId, userId: ownerId } = requireRole(context, 'owner');
+    const { gymId, userId: ownerId } = await requireRole(context, 'owner');
 
     if (userId === ownerId) {
       throw new Error('You cannot deactivate your own account');
@@ -223,7 +223,7 @@ export const Mutation = {
     },
     context: AuthContext
   ) => {
-    const { userId, gymId } = requireRole(context, 'coach');
+    const { userId, gymId } = await requireRole(context, 'coach');
 
     return Program.create({
       name: input.name,
@@ -239,7 +239,7 @@ export const Mutation = {
     { id, input }: { id: string; input: { name?: string; description?: string; weeks?: unknown } },
     context: AuthContext
   ) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
 
     const program = await Program.findOne({ _id: id, coachId: userId });
     if (!program) {
@@ -258,7 +258,7 @@ export const Mutation = {
     { id }: { id: string },
     context: AuthContext
   ) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
 
     const program = await Program.findOne({ _id: id, coachId: userId });
     if (!program) {
@@ -284,7 +284,7 @@ export const Mutation = {
     { memberId, programId }: { memberId: string; programId: string },
     context: AuthContext
   ) => {
-    const { userId, gymId } = requireRole(context, 'coach');
+    const { userId, gymId } = await requireRole(context, 'coach');
 
     const member = await User.findOne({
       _id: memberId,
@@ -325,7 +325,7 @@ export const Mutation = {
     { memberId }: { memberId: string },
     context: AuthContext
   ) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
 
     const member = await User.findOne({
       _id: memberId,
@@ -347,5 +347,59 @@ export const Mutation = {
 
     return true;
   },
+  logWorkout: async (
+    _: unknown,
+    { input }: {
+      input: {
+        assignmentId: string;
+        weekNumber: number;
+        dayNumber: number;
+        date: Date;
+        exercises: Array<{
+          name: string;
+          sets: Array<{
+            setNumber: number;
+            reps: number;
+            weight: number;
+            completed: boolean;
+          }>;
+        }>;
+        notes?: string;
+      }
+    },
+    context: AuthContext
+  ) => {
+    const { userId } = await requireRole(context, 'member');
 
+    const assignment = await ProgramAssignment.findOne({
+      _id: input.assignmentId,
+      memberId: userId,
+      isActive: true
+    });
+    if (!assignment) {
+      throw new Error('Active program assignment not found');
+    }
+
+    const existingLog = await WorkoutLog.findOne({
+      memberId: userId,
+      assignmentId: input.assignmentId,
+      weekNumber: input.weekNumber,
+      dayNumber: input.dayNumber
+    });
+    if (existingLog) {
+      throw new Error('You have already logged this day');
+    }
+
+    return WorkoutLog.create({
+      memberId: new mongoose.Types.ObjectId(userId),
+      programId: assignment.programId,
+      assignmentId: new mongoose.Types.ObjectId(input.assignmentId),
+      gymId: assignment.gymId,
+      weekNumber: input.weekNumber,
+      dayNumber: input.dayNumber,
+      date: input.date,
+      exercises: input.exercises,
+      notes: input.notes ?? null
+    });
+  },
 };

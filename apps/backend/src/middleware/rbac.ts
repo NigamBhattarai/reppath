@@ -1,18 +1,27 @@
 import { AuthContext } from './auth';
 import { Role } from '@reppath/shared';
+import User from '../models/User';
 
-export const requireAuth = (context: AuthContext): NonNullable<AuthContext['user']> => {
+export const requireAuth = async (
+  context: AuthContext
+): Promise<NonNullable<AuthContext['user']>> => {
   if (!context.user) {
     throw new Error('UNAUTHENTICATED: You must be logged in');
   }
+
+  const user = await User.findById(context.user.userId).select('isActive');
+  if (!user || !user.isActive) {
+    throw new Error('UNAUTHENTICATED: This account has been deactivated');
+  }
+
   return context.user;
 };
 
-export const requireRole = (
+export const requireRole = async (
   context: AuthContext,
   ...roles: Role[]
-): NonNullable<AuthContext['user']> => {
-  const user = requireAuth(context);
+): Promise<NonNullable<AuthContext['user']>> => {
+  const user = await requireAuth(context);
   if (!roles.includes(user.role)) {
     throw new Error(`UNAUTHORIZED: Requires role ${roles.join(' or ')}`);
   }

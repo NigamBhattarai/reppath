@@ -88,3 +88,24 @@ export const DayFieldResolvers = {
     return log !== null;
   }
 };
+
+import { IProgramAssignment } from '../../models/ProgramAssignment';
+import Program from '../../models/Program';
+
+export const ProgramAssignmentFieldResolvers = {
+  id: (parent: IProgramAssignment) => parent._id.toString(),
+
+  program: async (parent: IProgramAssignment) => {
+    return Program.findById(parent.programId);
+  },
+
+  member: async (parent: IProgramAssignment) => {
+    return User.findById(parent.memberId);
+  }
+};
+
+import { IWorkoutLog } from '../../models/WorkoutLog';
+
+export const WorkoutLogFieldResolvers = {
+  id: (parent: IWorkoutLog) => parent._id.toString()
+};

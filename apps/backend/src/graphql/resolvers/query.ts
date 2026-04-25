@@ -8,17 +8,17 @@ import Program from '../../models/Program';
 
 export const Query = {
   me: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { userId } = requireAuth(context);
+    const { userId } = await requireAuth(context);
     return User.findById(userId);
   },
 
   gymMembers: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
     return User.find({ gymId, role: 'member' });
   },
 
   gymCoaches: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
     return User.find({ gymId, role: 'coach' });
   },
 
@@ -27,12 +27,12 @@ export const Query = {
     { coachId }: { coachId: string },
     context: AuthContext
   ) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
     return User.find({ gymId, role: 'member', assignedCoachId: coachId });
   },
 
   ownerDashboard: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { gymId } = requireRole(context, 'owner');
+    const { gymId } = await requireRole(context, 'owner');
     const gymObjectId = new mongoose.Types.ObjectId(gymId);
 
     const sevenDaysAgo = new Date();
@@ -61,12 +61,12 @@ export const Query = {
     };
   },
   myPrograms: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
     return Program.find({ coachId: userId, isDeleted: false });
   },
 
   program: async (_: unknown, { id }: { id: string }, context: AuthContext) => {
-    const { userId, role } = requireRole(context, 'coach', 'member');
+    const { userId, role } = await requireRole(context, 'coach', 'member');
 
     const program = await Program.findOne({ _id: id, isDeleted: false });
     if (!program) {
@@ -94,7 +94,7 @@ export const Query = {
   },
 
   myMembers: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
     return User.find({ assignedCoachId: userId, role: 'member' });
   },
 
@@ -103,7 +103,7 @@ export const Query = {
     { memberId, limit = 10, offset = 0 }: { memberId: string; limit?: number; offset?: number },
     context: AuthContext
   ) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
 
     const member = await User.findOne({
       _id: memberId,
@@ -120,7 +120,7 @@ export const Query = {
   },
 
   coachDashboard: async (_: unknown, __: unknown, context: AuthContext) => {
-    const { userId } = requireRole(context, 'coach');
+    const { userId } = await requireRole(context, 'coach');
     const coachObjectId = new mongoose.Types.ObjectId(userId);
 
     const sevenDaysAgo = new Date();
@@ -181,11 +181,153 @@ export const Query = {
       activeThisWeek
     };
   },
-  // placeholders for later features
-  memberProgress: () => null,
-  myAssignment: () => null,
-  myWorkoutLogs: () => [],
-  myProgress: () => null,
-  myLoggedExercises: () => [],
-  memberLoggedExercises: () => []
+  myAssignment: async (_: unknown, __: unknown, context: AuthContext) => {
+    const { userId } = await requireRole(context, 'member');
+
+    return ProgramAssignment.findOne({
+      memberId: new mongoose.Types.ObjectId(userId),
+      isActive: true
+    });
+  },
+
+  myWorkoutLogs: async (_: unknown, __: unknown, context: AuthContext) => {
+    const { userId } = await requireRole(context, 'member');
+
+    return WorkoutLog.find({ memberId: new mongoose.Types.ObjectId(userId) })
+      .sort({ date: -1 })
+      .limit(20);
+  },
+
+  myLoggedExercises: async (_: unknown, __: unknown, context: AuthContext) => {
+    const { userId } = await requireRole(context, 'member');
+
+    const result = await WorkoutLog.aggregate([
+      {
+        $match: {
+          memberId: new mongoose.Types.ObjectId(userId)
+        }
+      },
+      { $unwind: '$exercises' },
+      {
+        $group: {
+          _id: '$exercises.name',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: { count: { $gte: 2 } }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    return result.map(r => r._id);
+  },
+
+  myProgress: async (
+    _: unknown,
+    { exerciseName }: { exerciseName: string },
+    context: AuthContext
+  ) => {
+    const { userId } = await requireRole(context, 'member');
+    return buildProgressPipeline(userId, exerciseName);
+  },
+
+  memberProgress: async (
+    _: unknown,
+    { memberId, exerciseName }: { memberId: string; exerciseName: string },
+    context: AuthContext
+  ) => {
+    const { userId } = await requireRole(context, 'coach');
+
+    const member = await User.findOne({
+      _id: memberId,
+      assignedCoachId: userId,
+      role: 'member'
+    });
+    if (!member) {
+      throw new Error('Member not found or not assigned to you');
+    }
+
+    return buildProgressPipeline(memberId, exerciseName);
+  },
+
+  coachLoggedExercises: async (
+    _: unknown,
+    { memberId }: { memberId: string },
+    context: AuthContext
+  ) => {
+    const { userId } = await requireRole(context, 'coach');
+
+    const member = await User.findOne({
+      _id: memberId,
+      assignedCoachId: userId,
+      role: 'member'
+    });
+    if (!member) {
+      throw new Error('Member not found or not assigned to you');
+    }
+
+    const result = await WorkoutLog.aggregate([
+      {
+        $match: {
+          memberId: new mongoose.Types.ObjectId(memberId)
+        }
+      },
+      { $unwind: '$exercises' },
+      {
+        $group: {
+          _id: '$exercises.name',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: { count: { $gte: 2 } }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    return result.map(r => r._id);
+  },
+};
+
+const buildProgressPipeline = async (
+  memberId: string,
+  exerciseName: string
+) => {
+  const points = await WorkoutLog.aggregate([
+    {
+      $match: {
+        memberId: new mongoose.Types.ObjectId(memberId)
+      }
+    },
+    { $unwind: '$exercises' },
+    {
+      $match: {
+        'exercises.name': exerciseName
+      }
+    },
+    { $unwind: '$exercises.sets' },
+    {
+      $match: {
+        'exercises.sets.completed': true
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: '%Y-%m-%d', date: '$date' }
+        },
+        averageWeight: { $avg: '$exercises.sets.weight' }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]);
+
+  return {
+    exerciseName,
+    points: points.map(p => ({
+      date: new Date(p._id),
+      averageWeight: p.averageWeight
+    }))
+  };
 };
