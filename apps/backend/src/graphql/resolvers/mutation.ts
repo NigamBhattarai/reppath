@@ -8,14 +8,21 @@ import ProgramAssignment from '../../models/ProgramAssignment';
 import mongoose from 'mongoose';
 import Program from '../../models/Program';
 import WorkoutLog from '../../models/WorkoutLog';
+import { loginSchema, registerOwnerSchema } from '../../validation/auth.schemas';
+import { createUserSchema } from '../../validation/user.schemas';
+import { createProgramSchema, updateProgramSchema } from '../../validation/program.schemas';
+import { logWorkoutSchema } from '../../validation/workout.schemas';
 
 export const Mutation = {
   registerOwner: async (
     _: unknown,
-    { input }: { input: { name: string; email: string; password: string; gymName: string } },
+    { input }: { input: unknown },
     _context: AuthContext
   ) => {
-    const existingUser = await User.findOne({ email: input.email.toLowerCase() });
+
+    const validated = registerOwnerSchema.parse(input);
+
+    const existingUser = await User.findOne({ email: validated.email.toLowerCase() });
     if (existingUser) {
       throw new Error('An account with this email already exists');
     }
@@ -24,17 +31,17 @@ export const Mutation = {
     session.startTransaction();
 
     try {
-      const passwordHash = await hashPassword(input.password);
+      const passwordHash = await hashPassword(validated.password);
 
       const gym = await Gym.create(
-        [{ name: input.gymName, ownerId: new mongoose.Types.ObjectId() }],
+        [{ name: validated.gymName, ownerId: new mongoose.Types.ObjectId() }],
         { session }
       );
 
       const user = await User.create(
         [{
-          name: input.name,
-          email: input.email.toLowerCase(),
+          name: validated.name,
+          email: validated.email.toLowerCase(),
           passwordHash,
           role: 'owner',
           gymId: gym[0]._id,
@@ -69,10 +76,13 @@ export const Mutation = {
 
   login: async (
     _: unknown,
-    { input }: { input: { email: string; password: string } },
+    { input }: { input: unknown },
     _context: AuthContext
   ) => {
-    const user = await User.findOne({ email: input.email.toLowerCase() });
+
+    const validated = loginSchema.parse(input);
+
+    const user = await User.findOne({ email: validated.email.toLowerCase() });
 
     if (!user) {
       throw new Error('Invalid email or password');
@@ -82,7 +92,7 @@ export const Mutation = {
       throw new Error('This account has been deactivated');
     }
 
-    const valid = await comparePassword(input.password, user.passwordHash);
+    const valid = await comparePassword(validated.password, user.passwordHash);
     if (!valid) {
       throw new Error('Invalid email or password');
     }
@@ -100,21 +110,23 @@ export const Mutation = {
 
   createCoach: async (
     _: unknown,
-    { input }: { input: { name: string; email: string; password: string } },
+    { input }: { input: unknown },
     context: AuthContext
   ) => {
     const { gymId } = await requireRole(context, 'owner');
 
-    const existing = await User.findOne({ email: input.email.toLowerCase() });
+    const validated = createUserSchema.parse(input);
+
+    const existing = await User.findOne({ email: validated.email.toLowerCase() });
     if (existing) {
       throw new Error('An account with this email already exists');
     }
 
-    const passwordHash = await hashPassword(input.password);
+    const passwordHash = await hashPassword(validated.password);
 
     return User.create({
-      name: input.name,
-      email: input.email.toLowerCase(),
+      name: validated.name,
+      email: validated.email.toLowerCase(),
       passwordHash,
       role: 'coach',
       gymId: new mongoose.Types.ObjectId(gymId),
@@ -124,21 +136,23 @@ export const Mutation = {
 
   createMember: async (
     _: unknown,
-    { input }: { input: { name: string; email: string; password: string } },
+    { input }: { input: unknown },
     context: AuthContext
   ) => {
     const { gymId } = await requireRole(context, 'owner');
 
-    const existing = await User.findOne({ email: input.email.toLowerCase() });
+    const validated = createUserSchema.parse(input);
+
+    const existing = await User.findOne({ email: validated.email.toLowerCase() });
     if (existing) {
       throw new Error('An account with this email already exists');
     }
 
-    const passwordHash = await hashPassword(input.password);
+    const passwordHash = await hashPassword(validated.password);
 
     return User.create({
-      name: input.name,
-      email: input.email.toLowerCase(),
+      name: validated.name,
+      email: validated.email.toLowerCase(),
       passwordHash,
       role: 'member',
       gymId: new mongoose.Types.ObjectId(gymId),
@@ -199,56 +213,44 @@ export const Mutation = {
 
     return user;
   },
+
+  // Program
+
   createProgram: async (
     _: unknown,
     { input }: {
-      input: {
-        name: string;
-        description: string;
-        weeks: Array<{
-          weekNumber: number;
-          days: Array<{
-            dayNumber: number;
-            name: string;
-            exercises: Array<{
-              name: string;
-              sets: number;
-              reps: string;
-              targetWeight?: number;
-              notes?: string;
-            }>;
-          }>;
-        }>;
-      }
+      input: unknown
     },
     context: AuthContext
   ) => {
     const { userId, gymId } = await requireRole(context, 'coach');
 
+    const validated = createProgramSchema.parse(input)
+    
     return Program.create({
-      name: input.name,
-      description: input.description,
+      name: validated.name,
+      description: validated.description,
       coachId: new mongoose.Types.ObjectId(userId),
       gymId: new mongoose.Types.ObjectId(gymId),
-      weeks: input.weeks
+      weeks: validated.weeks
     });
   },
 
   updateProgram: async (
     _: unknown,
-    { id, input }: { id: string; input: { name?: string; description?: string; weeks?: unknown } },
+    { id, input }: { id: string; input: unknown },
     context: AuthContext
   ) => {
     const { userId } = await requireRole(context, 'coach');
-
+    const validated = updateProgramSchema.parse(input);
     const program = await Program.findOne({ _id: id, coachId: userId });
     if (!program) {
       throw new Error('Program not found or you do not have permission to edit it');
     }
 
-    if (input.name !== undefined) program.name = input.name;
-    if (input.description !== undefined) program.description = input.description;
-    if (input.weeks !== undefined) program.weeks = input.weeks as typeof program.weeks;
+    if (validated.name !== undefined) program.name = validated.name;
+    if (validated.description !== undefined) program.description = validated.description;
+    if (validated.weeks !== undefined) program.weeks = validated.weeks as typeof program.weeks;
 
     return program.save();
   },
@@ -347,32 +349,21 @@ export const Mutation = {
 
     return true;
   },
+  
+  //Workout Log
   logWorkout: async (
     _: unknown,
     { input }: {
-      input: {
-        assignmentId: string;
-        weekNumber: number;
-        dayNumber: number;
-        date: Date;
-        exercises: Array<{
-          name: string;
-          sets: Array<{
-            setNumber: number;
-            reps: number;
-            weight: number;
-            completed: boolean;
-          }>;
-        }>;
-        notes?: string;
-      }
+      input: unknown
     },
     context: AuthContext
   ) => {
     const { userId } = await requireRole(context, 'member');
 
+    const validated = logWorkoutSchema.parse(input);
+
     const assignment = await ProgramAssignment.findOne({
-      _id: input.assignmentId,
+      _id: validated.assignmentId,
       memberId: userId,
       isActive: true
     });
@@ -382,9 +373,9 @@ export const Mutation = {
 
     const existingLog = await WorkoutLog.findOne({
       memberId: userId,
-      assignmentId: input.assignmentId,
-      weekNumber: input.weekNumber,
-      dayNumber: input.dayNumber
+      assignmentId: validated.assignmentId,
+      weekNumber: validated.weekNumber,
+      dayNumber: validated.dayNumber
     });
     if (existingLog) {
       throw new Error('You have already logged this day');
@@ -393,13 +384,13 @@ export const Mutation = {
     return WorkoutLog.create({
       memberId: new mongoose.Types.ObjectId(userId),
       programId: assignment.programId,
-      assignmentId: new mongoose.Types.ObjectId(input.assignmentId),
+      assignmentId: new mongoose.Types.ObjectId(validated.assignmentId),
       gymId: assignment.gymId,
-      weekNumber: input.weekNumber,
-      dayNumber: input.dayNumber,
-      date: input.date,
-      exercises: input.exercises,
-      notes: input.notes ?? null
+      weekNumber: validated.weekNumber,
+      dayNumber: validated.dayNumber,
+      date: validated.date,
+      exercises: validated.exercises,
+      notes: validated.notes ?? null
     });
   },
 };

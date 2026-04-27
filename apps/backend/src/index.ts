@@ -7,6 +7,8 @@ import { expressMiddleware } from '@apollo/server/express4';
 import { typeDefs } from './graphql/schema/typeDefs';
 import { resolvers } from './graphql/resolvers';
 import { buildContext } from './middleware/auth';
+import { GraphQLFormattedError } from 'graphql';
+import { ZodError } from 'zod';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -20,7 +22,26 @@ app.get('/health', (_req, res) => {
 
 const start = async (): Promise<void> => {
   await connectDB();
-  const server = new ApolloServer({ typeDefs, resolvers });
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    formatError: (formattedError, error): GraphQLFormattedError => {
+      if (error instanceof ZodError) {
+        return {
+          message: 'Validation failed',
+          extensions: {
+            code: 'VALIDATION_ERROR',
+            issues: error.issues.map(issue => ({
+              path: issue.path,
+              message: issue.message
+            }))
+          }
+        };
+      }
+      return formattedError;
+    }
+  });
+
   await server.start();
 
   app.use(
