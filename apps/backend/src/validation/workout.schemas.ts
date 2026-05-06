@@ -21,7 +21,7 @@ export const logWorkoutSchema = z.object({
     dayNumber: z.number().min(1, "Day number must be at least 1").max(7, "Day number must not exceed 7"),
     date: z.date({error: "Must be a date"}),
     exercises: z.array(exerciseLogSchema).min(1, "Must contain at least 1 exercise").max(20, "Must not exceed 20 exercises"),
-    notes: z.string().max(250, "Note must not exceed 250 characters").optional()
+    notes: z.string().max(250, "Note must not exceed 250 characters").nullish()
 })
 
 export type SetLogInput = z.infer<typeof setLogSchema>;

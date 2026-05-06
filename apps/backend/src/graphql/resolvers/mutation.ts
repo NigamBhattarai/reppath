@@ -29,6 +29,7 @@ export const Mutation = {
 
     const session = await mongoose.startSession();
     session.startTransaction();
+    let committed = false;
 
     try {
       const passwordHash = await hashPassword(validated.password);
@@ -57,6 +58,7 @@ export const Mutation = {
       );
 
       await session.commitTransaction();
+      committed = true;
 
       const token = signToken({
         userId: user[0]._id.toString(),
@@ -67,7 +69,9 @@ export const Mutation = {
       return { token, user: user[0] };
 
     } catch (error) {
-      await session.abortTransaction();
+      if (!committed) {
+        await session.abortTransaction();
+      }
       throw error;
     } finally {
       session.endSession();
