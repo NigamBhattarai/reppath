@@ -11,4 +11,4 @@ const config: Config = {
   }
 };
 
-export default config;
+export default config; 
