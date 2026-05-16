@@ -14,7 +14,7 @@ export const exerciseLogSchema = z.object({
 })
 
 export const logWorkoutSchema = z.object({
-    assignmentId: z.string().refine((val) => ObjectId.isValid(val), {
+    assignmentId: z.string().refine((val: string) => ObjectId.isValid(val), {
             message: "Invalid MongoDB ObjectId",
         }),
     weekNumber: z.number().min(1, "Week number must be at least 1").max(52, "Week number must not exceed 52"),

@@ -89,7 +89,7 @@ export const Mutation = {
     const user = await User.findOne({ email: validated.email.toLowerCase() });
 
     if (!user) {
-      throw new Error('Invalid email or password'); // Throw the same error for incorrect email or password for security
+      throw new Error('Invalid email or password');
     }
 
     if (!user.isActive) {

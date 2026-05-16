@@ -9,6 +9,7 @@ import { resolvers } from './graphql/resolvers';
 import { buildContext } from './middleware/auth';
 import { GraphQLFormattedError } from 'graphql';
 import { ZodError } from 'zod';
+import { ZodIssue } from 'zod/v3';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -27,11 +28,12 @@ const start = async (): Promise<void> => {
     resolvers,
     formatError: (formattedError, error): GraphQLFormattedError => {
       if (error instanceof ZodError) {
+        const zodError = error as ZodError;
         return {
           message: 'Validation failed',
           extensions: {
             code: 'VALIDATION_ERROR',
-            issues: error.issues.map(issue => ({
+            issues: zodError.issues.map(issue => ({
               path: issue.path,
               message: issue.message
             }))
