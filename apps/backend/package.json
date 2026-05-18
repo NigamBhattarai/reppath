@@ -8,7 +8,6 @@
     "test": "jest"
   },
   "dependencies": {
-    "@reppath/shared": "file:../../packages/shared",
     "@apollo/server": "^4.10.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

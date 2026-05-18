@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import { verifyToken } from '../utils/jwt';
-import { JwtPayload } from '@reppath/shared';
+import { JwtPayload } from '../types/shared';
 
 export interface AuthContext {
   user: JwtPayload | null;

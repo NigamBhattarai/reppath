@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { JwtPayload } from '@reppath/shared';
+import { JwtPayload } from '../types/shared';
 
 const getSecret = (): string => {
   const secret = process.env.JWT_SECRET;

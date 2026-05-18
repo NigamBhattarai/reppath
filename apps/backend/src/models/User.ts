@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { Role } from '@reppath/shared';
+import { Role } from '../types/shared';
 
 export interface IUser extends Document {
   name: string;

@@ -1,6 +1,6 @@
 import { AuthContext } from './auth';
-import { Role } from '@reppath/shared';
 import User from '../models/User';
+import { Role } from '../types/shared';
 
 export const requireAuth = async (
   context: AuthContext
