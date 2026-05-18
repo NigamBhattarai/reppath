@@ -251,7 +251,7 @@ export const Query = {
     return buildProgressPipeline(memberId, exerciseName);
   },
 
-  coachLoggedExercises: async (
+  memberLoggedExercises: async (
     _: unknown,
     { memberId }: { memberId: string },
     context: AuthContext
