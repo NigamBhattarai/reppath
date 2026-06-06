@@ -43,7 +43,7 @@ export default function CoachLayout({
             <div className="flex flex-row h-full">
                 {/* Side Bar */}
                 <SideBar options={[
-                    {Icon: PiHouse, name: "Dashboard", link: '/'},
+                    {Icon: PiHouse, name: "Dashboard", link: '/coach/dashboard'},
                     {Icon: PiUser, name: "Members", link: '/coach/members'},
                     {Icon: CgGym, name: "Programs", link: '/coach/programs'}
                     

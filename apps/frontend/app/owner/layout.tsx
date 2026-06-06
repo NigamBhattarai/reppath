@@ -42,7 +42,7 @@ export default function OwnerLayout({
             <div className="flex flex-row h-full">
                 {/* Side Bar */}
                 <SideBar options={[
-                    {Icon: PiHouse, name: "Dashboard", link: '/'},
+                    {Icon: PiHouse, name: "Dashboard", link: '/owner/dashboard'},
                     {Icon: GiTeacher, name: "Coaches", link: '/owner/coaches'},
                     {Icon: PiUser, name: "Members", link: '/owner/members'}
                     

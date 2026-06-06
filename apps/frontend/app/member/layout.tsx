@@ -43,7 +43,7 @@ export default function MemberLayout({
             <div className="flex flex-row h-full">
                 {/* Side Bar */}
                 <SideBar options={[
-                    {Icon: PiHouse, name: "Dashboard", link: '/'},
+                    {Icon: PiHouse, name: "Dashboard", link: '/member/dashboard'},
                     {Icon: CgGym, name: "Program", link: '/member/program'},
                     {Icon: GiProgression, name: "Progress", link: '/member/progress'}
                     
