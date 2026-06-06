@@ -21,7 +21,7 @@ export default function SideBar({options, className}: {options: SidebarMenuOptio
                         'flex flex-row gap-4 w-full cursor-pointer py-4 items-center justify-center transition-colors duration-75 border-b border-b-border/30 hover:bg-border/50',
                         (pathname === link || pathname.startsWith(link + '/')) && 'bg-border/50 hover:bg-border')}
                     onClick={()=>router.push(link)}>
-                        <Icon className={cn(sidebarCollapsed && 'text-3xl')}/>
+                        <Icon className={cn('transition-all',sidebarCollapsed && 'text-3xl')}/>
                         {!sidebarCollapsed && name}
                 </div>
             )}
