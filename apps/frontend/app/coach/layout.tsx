@@ -13,44 +13,27 @@ export default function CoachLayout({
 }: Readonly<{
   children: React.ReactNode;
 }> ) {
-    const client = useApolloClient();
     const router = useRouter();
-    const user = useCurrentUser();
-
-    const handleLogout = async () => {
-        clearAuthCookie();
-        await client.clearStore();
-        toast.success("Logged Out", {
-            position: 'top-center',
-            hideProgressBar:true
-        });
-        router.push('/login');
-    }
 
     return (
         <div className="h-screen">
             {/* Top Bar */}
-            <div className="w-full h-15 bg-surface sticky flex flex-row-reverse gap-1">
-                <span className="my-auto mx-2 p-2 rounded cursor-pointer hover:bg-secondary/10 transition-colors" title="Logout" onClick={handleLogout}>
-                    <PiPower/>
-                </span>
-                <div className="my-auto">Hello, {user?.user?.name}</div>
-                <div className="flex-1 flex flex-row mx-2 my-1 cursor-pointer" onClick={()=>router.push("/")}>
-                    <img src={'/logo-only.png'}/>
-                    <div className="flex mx-5 my-auto w-30 h-fit "><img src={'/logo-text-only-white-text.png'}/></div>
-                </div>
-            </div>
-            <div className="flex flex-row h-full">
-                {/* Side Bar */}
-                <SideBar options={[
+            <div className="flex flex-row gap-0 w-full h-full">
+                <SideBar className="border-r border-t border-border" options={[
                     {Icon: PiHouse, name: "Dashboard", link: '/coach/dashboard'},
                     {Icon: PiUser, name: "Members", link: '/coach/members'},
                     {Icon: CgGym, name: "Programs", link: '/coach/programs'}
-                    
                 ]}/>
-                {/* Content Div */}
-                <div className="flex-9 h-full overflow-y-auto scrollbar-thin">
-                    {children}
+                <div className="flex flex-col w-full">
+                    <div className="w-full h-15 bg-surface flex flex-row-reverse gap-1">
+                        <div className="flex-1 flex flex-row mx-2 my-1 cursor-pointer" onClick={()=>router.push("/")}>
+                            <img src={'/logo-only.png'}/>
+                            <div className="flex mx-5 my-auto w-30 h-fit "><img src={'/logo-text-only-white-text.png'}/></div>
+                        </div>
+                    </div>
+                    <div className="flex-9 h-full overflow-y-auto scrollbar-thin m-4 p-6 border border-border rounded-2xl">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>
