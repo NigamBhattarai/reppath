@@ -17,3 +17,12 @@ export interface LoginResponse {
 export interface RegisterOwnerResponse {
   registerOwner: AuthPayload;
 }
+
+export interface OwnerDashboardData {
+  ownerDashboard: {
+    totalMembers: number;
+    totalCoaches: number;
+    activeProgramAssignments: number;
+    workoutLogsLast7Days: number;
+  }
+}

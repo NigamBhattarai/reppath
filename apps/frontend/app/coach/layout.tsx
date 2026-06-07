@@ -1,11 +1,7 @@
 'use client';
-import useCurrentUser from "@/hooks/useCurrentUser";
-import { clearAuthCookie } from "@/lib/utils/cookies";
-import { useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
-import { PiHouse, PiPower, PiUser } from "react-icons/pi";
+import { PiHouse, PiUser } from "react-icons/pi";
 import { CgGym } from "react-icons/cg";
-import { toast } from "react-toastify";
 import SideBar from "@/components/ui/SideBar";
 
 export default function CoachLayout({
@@ -14,7 +10,6 @@ export default function CoachLayout({
   children: React.ReactNode;
 }> ) {
     const router = useRouter();
-
     return (
         <div className="h-screen">
             {/* Top Bar */}

@@ -1,32 +1,17 @@
 'use client';
 
 import SideBar from "@/components/ui/SideBar";
-import useCurrentUser from "@/hooks/useCurrentUser";
 import { CgGym } from "react-icons/cg";
-import { PiHouse, PiPower } from "react-icons/pi";
+import { PiHouse } from "react-icons/pi";
 import { GiProgression } from "react-icons/gi";
-import { clearAuthCookie } from "@/lib/utils/cookies";
-import { useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 
 export default function MemberLayout({
     children
 }: Readonly<{
   children: React.ReactNode;
 }> ) {
-    const client = useApolloClient();
     const router = useRouter();
-    const user = useCurrentUser();
-    const handleLogout = async () => {
-        clearAuthCookie();
-        await client.clearStore();
-        toast.success("Logged Out", {
-            position: 'top-center',
-            hideProgressBar:true
-        });
-        router.push('/login');
-    }
     return (
         <div className="h-screen">
             {/* Top Bar */}

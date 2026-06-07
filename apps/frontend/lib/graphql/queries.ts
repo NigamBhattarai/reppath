@@ -10,3 +10,14 @@ export const ME_QUERY = gql`
     }
   }
 `;
+
+export const OWNER_DASHBOARD_QUERY = gql`
+  query OwnerDashboard {
+    ownerDashboard {
+      totalMembers
+      totalCoaches
+      activeProgramAssignments
+      workoutLogsLast7Days
+    }
+  }
+`;
